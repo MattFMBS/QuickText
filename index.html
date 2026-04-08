@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QuickText">
+<meta name="theme-color" content="#0a0a0f">
+<title>QuickText — Recruiter SMS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-deep: #0a0a0f; --bg-mid: #111827; --bg-accent: #1e1b4b;
+    --surface: rgba(255,255,255,0.04); --surface-hover: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.07); --border-light: rgba(255,255,255,0.1);
+    --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #64748b; --text-faint: #475569;
+    --purple: #6366f1; --purple-light: #a5b4fc; --purple-glow: #c7d2fe;
+    --green: #10b981; --green-light: #86efac;
+    --yellow: #fbbf24; --yellow-light: #fcd34d;
+    --red: #f87171; --red-bg: rgba(239,68,68,0.15);
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
+  html { height: 100%; }
+  body {
+    min-height: 100%; font-family: var(--font); color: var(--text);
+    background: linear-gradient(165deg, var(--bg-deep) 0%, var(--bg-mid) 40%, var(--bg-accent) 100%);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .header {
+    padding: 20px 20px 16px; background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg,#6366f1,#a855f7); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .header-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+  .stats { text-align: right; font-size: 11px; color: var(--text-dim); line-height: 1.5; white-space: nowrap; }
+  .stats .sent { color: var(--green-light); } .stats .skip { color: var(--yellow-light); } .stats .left { color: var(--purple-light); }
+
+  .tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 3px; }
+  .tab { flex: 1; padding: 8px 0; border: none; border-radius: 8px; background: transparent; color: var(--text-dim); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font); -webkit-appearance: none; }
+  .tab.active { background: rgba(99,102,241,0.3); color: var(--purple-glow); }
+
+  .content { padding: 16px 20px 100px; }
+
+  .card { background: var(--surface); border-radius: 14px; border: 1px solid var(--border); padding: 16px; margin-bottom: 10px; animation: fadeIn 0.3s ease; }
+  .card.highlight { border-color: rgba(99,102,241,0.25); }
+
+  .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; display: block; }
+
+  .input, .textarea {
+    width: 100%; background: var(--surface-hover); border: 1px solid var(--border-light);
+    border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 16px;
+    outline: none; font-family: var(--font); -webkit-appearance: none; appearance: none;
+  }
+  .input:focus, .textarea:focus { border-color: rgba(99,102,241,0.4); }
+  .input.mono { font-family: var(--mono); font-size: 15px; }
+  .textarea { border-radius: 12px; padding: 14px; line-height: 1.5; resize: vertical; }
+
+  .btn {
+    padding: 14px 0; border-radius: 12px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: var(--font); width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary { border: none; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; box-shadow: 0 4px 20px rgba(99,102,241,0.3); }
+  .btn-primary:active { opacity: 0.9; }
+  .btn-ghost { border: 1px solid var(--border-light); background: var(--surface-hover); color: var(--text); font-weight: 600; font-size: 14px; }
+  .btn-disabled { border: none; background: var(--surface-hover); color: var(--text-faint); cursor: default; }
+  .btn-danger { background: none; border: 1px solid rgba(239,68,68,0.2); color: var(--red); font-size: 12px; font-weight: 500; }
+  .btn-small { padding: 10px 20px; width: auto; font-size: 13px; }
+  .btn-skip { border-color: rgba(251,191,36,0.3); color: var(--yellow-light); }
+
+  .btn-header-reset {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; color: var(--text-muted); padding: 6px 10px;
+    cursor: pointer; font-size: 11px; font-weight: 600; font-family: var(--font);
+    -webkit-appearance: none; white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-header-reset:active { background: rgba(255,255,255,0.1); }
+
+  .pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .pill {
+    flex-shrink: 0; padding: 8px 14px; border-radius: 20px;
+    background: var(--surface-hover); border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-muted); font-size: 12px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; font-family: var(--font); -webkit-appearance: none;
+  }
+  .pill.active { background: rgba(99,102,241,0.3); border-color: rgba(99,102,241,0.4); color: var(--purple-glow); }
+
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 8px; border-radius: 6px; flex-shrink: 0; }
+  .badge-pending { background: rgba(99,102,241,0.15); color: var(--purple-light); border: 1px solid rgba(99,102,241,0.3); }
+  .badge-sent { background: rgba(34,197,94,0.15); color: var(--green-light); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-skipped { background: rgba(251,191,36,0.15); color: var(--yellow-light); border: 1px solid rgba(251,191,36,0.3); }
+
+  .avatar { width: 44px; height: 44px; border-radius: 22px; background: linear-gradient(135deg,#6366f1,#a855f7); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0; }
+
+  .progress-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg,#6366f1,#a855f7); transition: width 0.3s; }
+
+  .candidate-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .candidate-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px; cursor: pointer; text-align: left; width: 100%;
+    font-family: var(--font); color: var(--text); -webkit-appearance: none;
+  }
+  .candidate-row:active { background: rgba(99,102,241,0.1); }
+  .candidate-row.current { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); }
+
+  .phone-wrap { display: flex; gap: 8px; align-items: center; background: var(--surface-hover); border-radius: 12px; padding: 4px 4px 4px 14px; border: 1px solid rgba(255,255,255,0.08); }
+  .phone-wrap input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 16px; padding: 10px 0; font-family: var(--mono); -webkit-appearance: none; }
+  .phone-clear { background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: var(--text-muted); padding: 8px 12px; cursor: pointer; font-size: 12px; }
+
+  .token-tag { display: inline-block; background: rgba(99,102,241,0.2); color: var(--purple-light); padding: 1px 6px; border-radius: 4px; font-family: var(--mono); font-size: 11px; }
+
+  .meta-row { font-size: 12px; color: var(--text-dim); display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+
+  .confirm-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  }
+  .confirm-box {
+    background: #1e1b4b; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px; padding: 24px; max-width: 320px; width: 100%; text-align: center;
+  }
+
+  details summary { font-size: 12px; color: var(--text-dim); cursor: pointer; margin-bottom: 8px; }
+  .flex { display: flex; } .gap-8 { gap: 8px; } .gap-10 { gap: 10px; } .gap-12 { gap: 12px; }
+  .flex-1 { flex: 1; } .flex-2 { flex: 2; }
+  .text-center { text-align: center; }
+  .mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; } .mt-20 { margin-top: 20px; }
+  .mb-4 { margin-bottom: 4px; } .mb-6 { margin-bottom: 6px; } .mb-8 { margin-bottom: 8px; }
+  .mb-10 { margin-bottom: 10px; } .mb-12 { margin-bottom: 12px; } .mb-14 { margin-bottom: 14px; }
+  .mb-16 { margin-bottom: 16px; } .mb-20 { margin-bottom: 20px; }
+  .w-full { width: 100%; } .hidden { display: none; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flex-wrap { flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ===== Safe Storage =====
+  var storage = {
+    get: function(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+    set: function(key, val) { try { localStorage.setItem(key, val); } catch(e) {} },
+    remove: function(key) { try { localStorage.removeItem(key); } catch(e) {} }
+  };
+
+  // ===== Safe Clipboard =====
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function() { fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.left = "-9999px";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  // ===== Constants =====
+  var TK = "quicktext-v5";
+  var PREFIXES = ["dr.", "dr", "mr.", "mr", "mrs.", "mrs", "ms.", "ms", "prof.", "prof", "rev.", "rev", "sr.", "sr", "jr.", "jr", "sgt.", "sgt", "cpl.", "cpl", "capt.", "capt", "maj.", "maj", "col.", "col", "gen.", "gen"];
+
+  var DEFAULT_TEMPLATES = [
+    { id:"1", label:"Initial Outreach", body:"Hi {name}, this is {recruiter} from {company}. I came across your profile and think you'd be a great fit for a {role} role we're hiring for in {location}. Do you have a few minutes to chat this week?" },
+    { id:"2", label:"Interview Follow-Up", body:"Hi {name}, this is {recruiter} from {company}. Just following up on our conversation about the {role} position. We'd love to move forward with scheduling your next interview. What does your availability look like this week?" },
+    { id:"3", label:"Offer Nudge", body:"Hey {name}! This is {recruiter} from {company}. Just checking in — have you had a chance to review the offer we sent over for the {role} position? Happy to answer any questions." },
+    { id:"4", label:"Quick Check-In", body:"Hi {name}, this is {recruiter} from {company}. Just wanted to touch base and see if you're still interested in the {role} position in {location}. Let me know if you'd like to reconnect!" },
+  ];
+
+  // ===== State =====
+  var state = {
+    templates: JSON.parse(JSON.stringify(DEFAULT_TEMPLATES)),
+    candidates: [], currentIdx: 0, message: "", activeTemplate: null,
+    view: "queue", manualPhone: "", jobName: "", sourceType: null, showUpload: true,
+    editingTemplate: null, editLabel: "", editBody: "",
+    copied: false, showResetConfirm: false,
+  };
+
+  function setState(patch) {
+    for (var k in patch) { if (patch.hasOwnProperty(k)) state[k] = patch[k]; }
+    render();
+  }
+
+  // ===== Helpers =====
+  function esc(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function formatPhone(raw) {
+    var d = (raw || "").replace(/\D/g, "");
+    if (d.length === 10) return "(" + d.slice(0,3) + ") " + d.slice(3,6) + "-" + d.slice(6);
+    if (d.length === 11 && d[0] === "1") return "+1 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7);
+    return raw || "";
+  }
+  function cleanPhone(raw) {
+    var d = (raw || "").replace(/\D/g, "");
+    if (d.length === 10) return "+1" + d;
+    if (d.length === 11 && d[0] === "1") return "+" + d;
+    return d;
+  }
+
+  function getFirstName(fullName) {
+    if (!fullName) return "there";
+    var parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return parts[0] || "there";
+    // If first part is a prefix, use the second part
+    var firstLower = parts[0].toLowerCase();
+    for (var i = 0; i < PREFIXES.length; i++) {
+      if (firstLower === PREFIXES[i]) {
+        return parts.length > 1 ? parts[1] : parts[0];
+      }
+    }
+    return parts[0];
+  }
+
+  function parseLine(line) {
+    var cols = [], cur = "", inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === "," && !inQ) { cols.push(cur.trim()); cur = ""; continue; }
+      cur += ch;
+    }
+    cols.push(cur.trim());
+    return cols;
+  }
+
+  function findCol(headers, patterns) {
+    for (var i = 0; i < headers.length; i++) {
+      for (var j = 0; j < patterns.length; j++) {
+        if (patterns[j].test(headers[i])) return i;
+      }
+    }
+    return -1;
+  }
+
+  function parseCSVText(text) {
+    var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
+    if (lines.length < 2) return [];
+    var headers = parseLine(lines[0]).map(function(h) { return h.toLowerCase().replace(/['"]/g, "").trim(); });
+
+    var nameIdx = findCol(headers, [/^name$/, /^candidate/, /^full\s*name$/, /^first\s*name$/]);
+    var phoneIdx = findCol(headers, [/phone/, /^mobile$/, /^cell$/, /^tel$/, /^number$/]);
+    var emailIdx = findCol(headers, [/email/, /e[\-\s]?mail/]);
+    var roleIdx = findCol(headers, [/^role$/, /^job$/, /^position$/, /^title$/, /^job\s*title$/]);
+    var recruiterIdx = findCol(headers, [/recruiter/, /^rep$/, /^agent$/, /^assigned/]);
+    var companyIdx = findCol(headers, [/company/, /^org/, /^employer/, /^client/]);
+    var locationIdx = findCol(headers, [/location/, /^city$/, /^area$/, /^region$/, /^market$/]);
+
+    if (phoneIdx === -1) return [];
+
+    var results = [];
+    for (var i = 1; i < lines.length; i++) {
+      var cols = parseLine(lines[i]);
+      var phone = cols[phoneIdx] || "";
+      if (cleanPhone(phone).length < 10) continue;
+      results.push({
+        id: "c-" + i + "-" + Date.now(),
+        name: nameIdx >= 0 ? (cols[nameIdx] || "Unknown") : "Unknown",
+        phone: phone,
+        email: emailIdx >= 0 ? (cols[emailIdx] || "") : "",
+        role: roleIdx >= 0 ? (cols[roleIdx] || "") : "",
+        recruiter: recruiterIdx >= 0 ? (cols[recruiterIdx] || "") : "",
+        company: companyIdx >= 0 ? (cols[companyIdx] || "") : "",
+        location: locationIdx >= 0 ? (cols[locationIdx] || "") : "",
+        status: "pending"
+      });
+    }
+    return results;
+  }
+
+  function fillTemplate(body, candidate) {
+    if (!candidate) return body;
+    return body
+      .replace(/\{name\}/gi, getFirstName(candidate.name))
+      .replace(/\{fullname\}/gi, candidate.name || "")
+      .replace(/\{role\}/gi, candidate.role || "[Role]")
+      .replace(/\{email\}/gi, candidate.email || "")
+      .replace(/\{recruiter\}/gi, candidate.recruiter || "[Your Name]")
+      .replace(/\{company\}/gi, candidate.company || "[Company]")
+      .replace(/\{location\}/gi, candidate.location || "[Location]");
+  }
+
+  // ===== Persistence =====
+  function save() {
+    storage.set(TK + "-session", JSON.stringify({
+      candidates: state.candidates, currentIdx: state.currentIdx,
+      jobName: state.jobName, sourceType: state.sourceType
+    }));
+    storage.set(TK + "-templates", JSON.stringify(state.templates));
+  }
+  function load() {
+    try { var t = storage.get(TK + "-templates"); if (t) state.templates = JSON.parse(t); } catch(e) {}
+    try {
+      var s = storage.get(TK + "-session");
+      if (s) {
+        var d = JSON.parse(s);
+        state.candidates = d.candidates || [];
+        state.currentIdx = d.currentIdx || 0;
+        state.jobName = d.jobName || "";
+        state.sourceType = d.sourceType || null;
+        if (d.candidates && d.candidates.length) state.showUpload = false;
+      }
+    } catch(e) {}
+  }
+
+  // ===== Actions =====
+  function handleFileUpload(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var parsed = parseCSVText(ev.target.result);
+      if (!parsed.length) { alert("No valid candidates found. Make sure your CSV has a column header containing 'phone', 'mobile', 'cell', or 'phone number'."); return; }
+      var name = file.name.replace(/\.[^.]+$/, "");
+      setState({
+        candidates: parsed, currentIdx: 0, jobName: name,
+        sourceType: "csv", showUpload: false, message: "", activeTemplate: null
+      });
+      save();
+    };
+    reader.readAsText(file);
+  }
+
+  function markAndAdvance(newStatus) {
+    var updated = state.candidates.slice();
+    updated[state.currentIdx] = Object.assign({}, updated[state.currentIdx], { status: newStatus });
+    var next = state.currentIdx + 1;
+    while (next < updated.length && updated[next].status !== "pending") next++;
+    if (next >= updated.length) next = updated.length;
+    setState({ candidates: updated, currentIdx: next, message: "", activeTemplate: null });
+    save();
+  }
+
+  function isAndroid() {
+    return /android/i.test(navigator.userAgent);
+  }
+
+  function sendSMS(phone) {
+    var clean = cleanPhone(phone);
+    if (!clean) return;
+    var sep = isAndroid() ? "?body=" : "&body=";
+    var url = "sms:" + clean;
+    if (state.message) url += sep + encodeURIComponent(state.message);
+    window.location.href = url;
+  }
+
+  function selectTemplate(t, candidate) {
+    setState({ activeTemplate: t.id, message: fillTemplate(t.body, candidate) });
+  }
+  function jumpTo(idx) {
+    setState({ currentIdx: idx, message: "", activeTemplate: null });
+    save();
+  }
+  function resetSession() {
+    setState({
+      candidates: [], currentIdx: 0, jobName: "", showUpload: true,
+      message: "", activeTemplate: null, sourceType: null, showResetConfirm: false
+    });
+    save();
+  }
+  function copyMessage() {
+    if (!state.message) return;
+    copyToClipboard(state.message);
+    setState({ copied: true });
+    setTimeout(function() { setState({ copied: false }); }, 1500);
+  }
+  function startEdit(t) {
+    setState({ editingTemplate: t ? t.id : "new", editLabel: t ? t.label : "", editBody: t ? t.body : "" });
+  }
+  function saveEdit() {
+    if (!state.editLabel.trim() || !state.editBody.trim()) return;
+    var updated = state.templates.slice();
+    if (state.editingTemplate === "new") {
+      updated.push({ id: String(Date.now()), label: state.editLabel, body: state.editBody });
+    } else {
+      updated = updated.map(function(t) {
+        return t.id === state.editingTemplate ? Object.assign({}, t, { label: state.editLabel, body: state.editBody }) : t;
+      });
+    }
+    setState({ templates: updated, editingTemplate: null });
+    save();
+  }
+  function deleteTemplate(id) {
+    setState({ templates: state.templates.filter(function(t) { return t.id !== id; }) });
+    save();
+  }
+
+  // ===== Render =====
+  function badgeHTML(status) {
+    return '<span class="badge badge-' + status + '">' + status + '</span>';
+  }
+
+  function render() {
+    var candidates = state.candidates;
+    var currentIdx = state.currentIdx;
+    var templates = state.templates;
+    var view = state.view;
+    var message = state.message;
+    var activeTemplate = state.activeTemplate;
+    var manualPhone = state.manualPhone;
+    var jobName = state.jobName;
+    var showUpload = state.showUpload;
+    var editingTemplate = state.editingTemplate;
+    var editLabel = state.editLabel;
+    var editBody = state.editBody;
+    var copied = state.copied;
+    var showResetConfirm = state.showResetConfirm;
+
+    var current = candidates[currentIdx] || null;
+    var pending = candidates.filter(function(c) { return c.status === "pending"; });
+    var sent = candidates.filter(function(c) { return c.status === "sent"; });
+    var skipped = candidates.filter(function(c) { return c.status === "skipped"; });
+    var isValidManual = cleanPhone(manualPhone).length >= 10;
+    var allDone = candidates.length > 0 && currentIdx >= candidates.length;
+    var pct = candidates.length ? Math.round(((sent.length + skipped.length) / candidates.length) * 100) : 0;
+    var hasSession = candidates.length > 0;
+
+    var pillsHTML = templates.map(function(t) {
+      return '<button class="pill' + (activeTemplate === t.id ? ' active' : '') + '" data-tpl="' + t.id + '">' + esc(t.label) + '</button>';
+    }).join("");
+
+    // ===== QUEUE =====
+    var queueHTML = "";
+    if (showUpload || !candidates.length) {
+      queueHTML = '<div class="text-center" style="padding:24px 0">'
+        + '<div style="font-size:48px;margin-bottom:12px">📋</div>'
+        + '<div style="font-size:16px;font-weight:600;margin-bottom:4px">Load Your Candidate List</div>'
+        + '<p style="font-size:13px;color:var(--text-muted);margin:0 auto 24px;max-width:300px">Upload a CSV export from your ATS to get started.</p>'
+        + '<div class="card" style="text-align:left">'
+          + '<div class="flex gap-8" style="align-items:center;margin-bottom:12px">'
+            + '<span style="font-size:20px">📁</span>'
+            + '<div><div style="font-size:14px;font-weight:600;color:var(--purple-glow)">Upload CSV</div>'
+            + '<div style="font-size:11px;color:var(--text-dim)">Select a file from your device</div></div>'
+          + '</div>'
+          + '<input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" class="hidden">'
+          + '<button class="btn btn-primary" id="csvUploadBtn">Choose File</button>'
+        + '</div>'
+        + '<div class="card" style="text-align:left;background:rgba(255,255,255,0.02)">'
+          + '<div style="font-size:12px;font-weight:600;color:var(--purple-glow);margin-bottom:6px">Auto-detected columns:</div>'
+          + '<div style="font-size:12px;color:var(--text-muted);line-height:1.8">'
+            + '<span style="color:var(--green-light)">Required:</span> phone, mobile, cell, phone number<br>'
+            + '<span style="color:var(--purple-light)">Optional:</span> name, recruiter, company, role, location, email'
+          + '</div>'
+          + '<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.6">'
+            + '<strong style="color:var(--text-muted)">Token tip:</strong> Use <span class="token-tag">{name}</span> for first name (skips prefixes like Dr., Mr., etc.) and <span class="token-tag">{fullname}</span> for the full name as-is.'
+          + '</div>'
+        + '</div>'
+      + '</div>';
+    } else if (allDone) {
+      queueHTML = '<div class="text-center" style="padding:40px 20px">'
+        + '<div style="font-size:48px;margin-bottom:16px">🎉</div>'
+        + '<div style="font-size:18px;font-weight:700;margin-bottom:8px">All Done!</div>'
+        + '<p style="font-size:13px;color:var(--text-muted);margin-bottom:8px">' + sent.length + ' sent · ' + skipped.length + ' skipped out of ' + candidates.length + '</p>'
+        + '<div class="flex gap-10" style="justify-content:center;flex-wrap:wrap;margin-top:20px">'
+          + '<button class="btn btn-ghost btn-small" id="resetBtn">Load New List</button>'
+          + '<button class="btn btn-primary btn-small' + (skipped.length === 0 ? ' btn-disabled' : '') + '" id="reviewSkippedBtn"' + (skipped.length === 0 ? ' disabled' : '') + '>Review Skipped</button>'
+        + '</div>'
+      + '</div>';
+    } else if (current) {
+      var candidateListHTML = candidates.map(function(c, i) {
+        return '<button class="candidate-row' + (i === currentIdx ? ' current' : '') + '" data-jump="' + i + '">'
+          + '<span style="font-size:13px;font-weight:600;flex:1" class="truncate">' + esc(c.name) + '</span>'
+          + '<span style="font-size:11px;color:var(--text-dim);font-family:var(--mono);flex-shrink:0">' + formatPhone(c.phone) + '</span>'
+          + badgeHTML(c.status)
+        + '</button>';
+      }).join("");
+
+      var metaParts = [];
+      if (current.recruiter) metaParts.push('<span>👤 ' + esc(current.recruiter) + '</span>');
+      if (current.company) metaParts.push('<span>🏢 ' + esc(current.company) + '</span>');
+      if (current.role) metaParts.push('<span>🏷 ' + esc(current.role) + '</span>');
+      if (current.location) metaParts.push('<span>📍 ' + esc(current.location) + '</span>');
+      if (current.email) metaParts.push('<span>✉ ' + esc(current.email) + '</span>');
+
+      queueHTML = ''
+        + '<div class="mb-16">'
+          + '<div class="flex mb-4" style="justify-content:space-between;align-items:center">'
+            + '<span style="font-size:11px;color:var(--text-muted)">Candidate ' + (candidates.indexOf(current) + 1) + ' of ' + candidates.length + '</span>'
+            + '<span style="font-size:11px;color:var(--text-dim)">' + pct + '% complete</span>'
+          + '</div>'
+          + '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>'
+        + '</div>'
+
+        + '<div class="card highlight">'
+          + '<div class="flex gap-12" style="align-items:center">'
+            + '<div class="avatar">' + (current.name ? current.name[0].toUpperCase() : "?") + '</div>'
+            + '<div class="flex-1" style="min-width:0">'
+              + '<div style="font-size:16px;font-weight:700">' + esc(current.name) + '</div>'
+              + '<div style="font-size:13px;color:var(--text-muted);font-family:var(--mono)">' + formatPhone(current.phone) + '</div>'
+            + '</div>'
+            + badgeHTML(current.status)
+          + '</div>'
+          + (metaParts.length ? '<div class="meta-row">' + metaParts.join("") + '</div>' : '')
+        + '</div>'
+
+        + '<div class="mb-14">'
+          + '<label class="label">Quick Templates</label>'
+          + '<div class="pills" id="templatePills">' + pillsHTML + '</div>'
+        + '</div>'
+
+        + '<div class="mb-16">'
+          + '<div class="flex mb-6" style="justify-content:space-between">'
+            + '<label class="label">Message</label>'
+            + '<span style="font-size:11px;color:' + (message.length > 160 ? '#f59e0b' : 'var(--text-dim)') + '">' + message.length + '/160</span>'
+          + '</div>'
+          + '<textarea class="textarea" id="messageArea" rows="4" placeholder="Message for ' + esc(getFirstName(current.name)) + '...">' + esc(message) + '</textarea>'
+        + '</div>'
+
+        + '<div class="flex gap-8 mb-10">'
+          + '<button class="btn btn-ghost flex-1' + (!message ? ' btn-disabled' : '') + '" id="copyBtn">' + (copied ? '✓ Copied' : 'Copy') + '</button>'
+          + '<button class="btn btn-ghost btn-skip flex-1" id="skipBtn">Skip →</button>'
+        + '</div>'
+        + '<button class="btn ' + (message ? 'btn-primary' : 'btn-disabled') + '" id="sendNextBtn">Open in Messages & Next →</button>'
+        + '<p style="font-size:11px;color:var(--text-faint);text-align:center;margin-top:8px">Opens Messages, then advances to the next candidate.</p>'
+
+        + '<details class="mt-20">'
+          + '<summary>View all candidates</summary>'
+          + '<div class="candidate-list">' + candidateListHTML + '</div>'
+        + '</details>';
+    }
+
+    // ===== MANUAL =====
+    var manualHTML = ''
+      + '<div class="mb-16">'
+        + '<label class="label">Phone Number</label>'
+        + '<div class="phone-wrap">'
+          + '<span style="font-size:18px">📱</span>'
+          + '<input type="tel" id="manualPhoneInput" placeholder="Paste or type number" value="' + esc(manualPhone) + '">'
+          + (manualPhone ? '<button class="phone-clear" id="clearPhoneBtn">✕</button>' : '')
+        + '</div>'
+        + (manualPhone && isValidManual ? '<div style="font-size:12px;color:var(--purple);margin-top:4px">' + formatPhone(manualPhone) + '</div>' : '')
+      + '</div>'
+      + '<div class="mb-14">'
+        + '<label class="label">Quick Templates</label>'
+        + '<div class="pills" id="templatePillsManual">' + pillsHTML + '</div>'
+      + '</div>'
+      + '<div class="mb-20">'
+        + '<div class="flex mb-6" style="justify-content:space-between">'
+          + '<label class="label">Message</label>'
+          + '<span style="font-size:11px;color:' + (message.length > 160 ? '#f59e0b' : 'var(--text-dim)') + '">' + message.length + '/160</span>'
+        + '</div>'
+        + '<textarea class="textarea" id="messageAreaManual" rows="5" placeholder="Type or pick a template...">' + esc(message) + '</textarea>'
+      + '</div>'
+      + '<div class="flex gap-10">'
+        + '<button class="btn btn-ghost flex-1' + (!message ? ' btn-disabled' : '') + '" id="copyBtnManual">' + (copied ? '✓ Copied' : 'Copy') + '</button>'
+        + '<button class="btn ' + (isValidManual ? 'btn-primary' : 'btn-disabled') + ' flex-2" id="manualSendBtn">Open in Messages →</button>'
+      + '</div>';
+
+    // ===== TEMPLATES =====
+    var templatesHTML = "";
+    if (editingTemplate) {
+      templatesHTML = '<div class="card" style="border-color:rgba(99,102,241,0.3)">'
+        + '<div style="font-size:13px;font-weight:600;color:var(--purple-glow);margin-bottom:12px">' + (editingTemplate === "new" ? "New Template" : "Edit Template") + '</div>'
+        + '<input class="input mb-10" id="editLabelInput" placeholder="Template name" value="' + esc(editLabel) + '">'
+        + '<textarea class="textarea mb-12" id="editBodyInput" rows="4" placeholder="Message body...">' + esc(editBody) + '</textarea>'
+        + '<div class="flex gap-8">'
+          + '<button class="btn btn-ghost flex-1" style="padding:10px 0" id="cancelEditBtn">Cancel</button>'
+          + '<button class="btn btn-primary flex-1" style="padding:10px 0" id="saveEditBtn">Save</button>'
+        + '</div>'
+        + '<div style="margin-top:12px;font-size:11px;color:var(--text-dim);line-height:1.8">'
+          + 'Available tokens:<br>'
+          + '<span class="token-tag">{name}</span> first name (skips Dr., Mr., etc.)<br>'
+          + '<span class="token-tag">{fullname}</span> full name as-is<br>'
+          + '<span class="token-tag">{recruiter}</span> '
+          + '<span class="token-tag">{company}</span> '
+          + '<span class="token-tag">{role}</span> '
+          + '<span class="token-tag">{location}</span> '
+          + '<span class="token-tag">{email}</span>'
+        + '</div>'
+      + '</div>';
+    } else {
+      templatesHTML = templates.map(function(t) {
+        return '<div class="card">'
+          + '<div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:6px">'
+            + '<span style="font-size:14px;font-weight:600;color:var(--purple-glow)">' + esc(t.label) + '</span>'
+            + '<div class="flex gap-8">'
+              + '<button style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;color:var(--text-muted);padding:4px 10px;cursor:pointer;font-size:11px;font-family:var(--font)" data-edit="' + t.id + '">Edit</button>'
+              + '<button style="background:var(--red-bg);border:none;border-radius:6px;color:var(--red);padding:4px 10px;cursor:pointer;font-size:11px;font-family:var(--font)" data-del="' + t.id + '">Del</button>'
+            + '</div>'
+          + '</div>'
+          + '<p style="font-size:13px;color:var(--text-muted);line-height:1.5;margin:0">' + esc(t.body) + '</p>'
+        + '</div>';
+      }).join("")
+      + '<button class="w-full mt-12" id="addTemplateBtn" style="padding:12px 0;border-radius:12px;background:rgba(99,102,241,0.15);border:1px dashed rgba(99,102,241,0.4);color:var(--purple-light);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Add New Template</button>';
+    }
+
+    // ===== Confirm overlay =====
+    var confirmHTML = "";
+    if (showResetConfirm) {
+      confirmHTML = '<div class="confirm-overlay" id="confirmOverlay">'
+        + '<div class="confirm-box">'
+          + '<div style="font-size:32px;margin-bottom:12px">⚠️</div>'
+          + '<div style="font-size:16px;font-weight:700;margin-bottom:6px">Start Over?</div>'
+          + '<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.5">This will clear all candidates and progress. You\'ll need to upload a new CSV.</p>'
+          + '<div class="flex gap-8">'
+            + '<button class="btn btn-ghost flex-1" style="padding:10px 0" id="confirmCancelBtn">Cancel</button>'
+            + '<button class="btn flex-1" style="padding:10px 0;border:none;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff" id="confirmResetBtn">Start Over</button>'
+          + '</div>'
+        + '</div>'
+      + '</div>';
+    }
+
+    // ===== Assemble =====
+    var html = ''
+      + '<div class="header">'
+        + '<div class="header-row">'
+          + '<div class="logo">💬</div>'
+          + '<div class="flex-1">'
+            + '<div class="header-title">QuickText</div>'
+            + '<div class="header-sub">' + esc(jobName || "Recruiter SMS Tool") + '</div>'
+          + '</div>'
+          + (hasSession
+            ? '<button class="btn-header-reset" id="headerResetBtn">✕ Reset</button>'
+            : '')
+          + (hasSession && !allDone
+            ? '<div class="stats" style="margin-left:8px"><span class="sent">' + sent.length + '</span>·<span class="skip">' + skipped.length + '</span>·<span class="left">' + pending.length + '</span></div>'
+            : '')
+        + '</div>'
+        + '<div class="tabs">'
+          + '<button class="tab' + (view === "queue" ? ' active' : '') + '" data-view="queue">Queue' + (hasSession ? ' (' + pending.length + ')' : '') + '</button>'
+          + '<button class="tab' + (view === "manual" ? ' active' : '') + '" data-view="manual">Manual</button>'
+          + '<button class="tab' + (view === "templates" ? ' active' : '') + '" data-view="templates">Templates</button>'
+        + '</div>'
+      + '</div>'
+      + '<div class="content">'
+        + (view === "queue" ? queueHTML : "")
+        + (view === "manual" ? manualHTML : "")
+        + (view === "templates" ? templatesHTML : "")
+      + '</div>'
+      + confirmHTML;
+
+    document.getElementById("app").innerHTML = html;
+    bindEvents();
+  }
+
+  function bindEvents() {
+    // Tabs
+    var tabBtns = document.querySelectorAll("[data-view]");
+    for (var i = 0; i < tabBtns.length; i++) {
+      (function(b) { b.addEventListener("click", function() { setState({ view: b.getAttribute("data-view") }); }); })(tabBtns[i]);
+    }
+
+    // CSV upload
+    var csvBtn = document.getElementById("csvUploadBtn");
+    var csvInput = document.getElementById("csvFileInput");
+    if (csvBtn && csvInput) {
+      csvBtn.addEventListener("click", function() { csvInput.click(); });
+      csvInput.addEventListener("change", handleFileUpload);
+    }
+
+    // Header reset
+    var headerResetBtn = document.getElementById("headerResetBtn");
+    if (headerResetBtn) headerResetBtn.addEventListener("click", function() { setState({ showResetConfirm: true }); });
+
+    // Confirm modal
+    var confirmCancelBtn = document.getElementById("confirmCancelBtn");
+    if (confirmCancelBtn) confirmCancelBtn.addEventListener("click", function() { setState({ showResetConfirm: false }); });
+    var confirmResetBtn = document.getElementById("confirmResetBtn");
+    if (confirmResetBtn) confirmResetBtn.addEventListener("click", function() { resetSession(); });
+    var confirmOverlay = document.getElementById("confirmOverlay");
+    if (confirmOverlay) confirmOverlay.addEventListener("click", function(e) { if (e.target === confirmOverlay) setState({ showResetConfirm: false }); });
+
+    // Reset from done screen
+    var resetBtns = document.querySelectorAll("#resetBtn");
+    for (var rb = 0; rb < resetBtns.length; rb++) { resetBtns[rb].addEventListener("click", function() { resetSession(); }); }
+
+    // Template pills
+    var pills = document.querySelectorAll("[data-tpl]");
+    for (var p = 0; p < pills.length; p++) {
+      (function(b) {
+        b.addEventListener("click", function() {
+          var t = null;
+          for (var j = 0; j < state.templates.length; j++) {
+            if (state.templates[j].id === b.getAttribute("data-tpl")) { t = state.templates[j]; break; }
+          }
+          if (t) selectTemplate(t, state.candidates[state.currentIdx] || null);
+        });
+      })(pills[p]);
+    }
+
+    // Message textarea
+    var msgIds = ["messageArea", "messageAreaManual"];
+    for (var m = 0; m < msgIds.length; m++) {
+      var el = document.getElementById(msgIds[m]);
+      if (el) el.addEventListener("input", function(e) { state.message = e.target.value; state.activeTemplate = null; });
+    }
+
+    // Copy
+    var copyIds = ["copyBtn", "copyBtnManual"];
+    for (var c = 0; c < copyIds.length; c++) {
+      var cel = document.getElementById(copyIds[c]);
+      if (cel) cel.addEventListener("click", copyMessage);
+    }
+
+    // Skip
+    var skipBtn = document.getElementById("skipBtn");
+    if (skipBtn) skipBtn.addEventListener("click", function() { markAndAdvance("skipped"); });
+
+    // Send & next
+    var sendNextBtn = document.getElementById("sendNextBtn");
+    if (sendNextBtn) sendNextBtn.addEventListener("click", function() {
+      var cur = state.candidates[state.currentIdx];
+      if (cur && state.message) { sendSMS(cur.phone); markAndAdvance("sent"); }
+    });
+
+    // Manual phone
+    var manualInput = document.getElementById("manualPhoneInput");
+    if (manualInput) manualInput.addEventListener("input", function(e) { state.manualPhone = e.target.value; });
+    var clearPhone = document.getElementById("clearPhoneBtn");
+    if (clearPhone) clearPhone.addEventListener("click", function() { setState({ manualPhone: "" }); });
+    var manualSend = document.getElementById("manualSendBtn");
+    if (manualSend) manualSend.addEventListener("click", function() { if (cleanPhone(state.manualPhone).length >= 10) sendSMS(state.manualPhone); });
+
+    // Jump to candidate
+    var jumpBtns = document.querySelectorAll("[data-jump]");
+    for (var j = 0; j < jumpBtns.length; j++) {
+      (function(b) { b.addEventListener("click", function() { jumpTo(parseInt(b.getAttribute("data-jump"), 10)); }); })(jumpBtns[j]);
+    }
+
+    // Review skipped
+    var reviewBtn = document.getElementById("reviewSkippedBtn");
+    if (reviewBtn) reviewBtn.addEventListener("click", function() {
+      for (var i = 0; i < state.candidates.length; i++) {
+        if (state.candidates[i].status === "skipped") { jumpTo(i); break; }
+      }
+    });
+
+    // Template editing
+    var editBtns = document.querySelectorAll("[data-edit]");
+    for (var eb = 0; eb < editBtns.length; eb++) {
+      (function(b) {
+        b.addEventListener("click", function() {
+          var t = null;
+          for (var j = 0; j < state.templates.length; j++) {
+            if (state.templates[j].id === b.getAttribute("data-edit")) { t = state.templates[j]; break; }
+          }
+          if (t) startEdit(t);
+        });
+      })(editBtns[eb]);
+    }
+    var delBtns = document.querySelectorAll("[data-del]");
+    for (var db = 0; db < delBtns.length; db++) {
+      (function(b) { b.addEventListener("click", function() { deleteTemplate(b.getAttribute("data-del")); }); })(delBtns[db]);
+    }
+    var addBtn = document.getElementById("addTemplateBtn");
+    if (addBtn) addBtn.addEventListener("click", function() { startEdit(null); });
+    var editLabelInput = document.getElementById("editLabelInput");
+    if (editLabelInput) editLabelInput.addEventListener("input", function(e) { state.editLabel = e.target.value; });
+    var editBodyInput = document.getElementById("editBodyInput");
+    if (editBodyInput) editBodyInput.addEventListener("input", function(e) { state.editBody = e.target.value; });
+    var cancelEditBtn = document.getElementById("cancelEditBtn");
+    if (cancelEditBtn) cancelEditBtn.addEventListener("click", function() { setState({ editingTemplate: null }); });
+    var saveEditBtn = document.getElementById("saveEditBtn");
+    if (saveEditBtn) saveEditBtn.addEventListener("click", saveEdit);
+  }
+
+  // Boot
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
