@@ -183,10 +183,10 @@
   var PREFIXES = ["dr.", "dr", "mr.", "mr", "mrs.", "mrs", "ms.", "ms", "prof.", "prof", "rev.", "rev", "sr.", "sr", "jr.", "jr", "sgt.", "sgt", "cpl.", "cpl", "capt.", "capt", "maj.", "maj", "col.", "col", "gen.", "gen"];
 
   var DEFAULT_TEMPLATES = [
-    { id:"1", label:"Initial Outreach", body:"Hi {name}, this is {recruiter} from {company}. I came across your profile and think you'd be a great fit for a {role} role we're hiring for in {location}. Do you have a few minutes to chat this week?" },
-    { id:"2", label:"Interview Follow-Up", body:"Hi {name}, this is {recruiter} from {company}. Just following up on our conversation about the {role} position. We'd love to move forward with scheduling your next interview. What does your availability look like this week?" },
-    { id:"3", label:"Offer Nudge", body:"Hey {name}! This is {recruiter} from {company}. Just checking in — have you had a chance to review the offer we sent over for the {role} position? Happy to answer any questions." },
-    { id:"4", label:"Quick Check-In", body:"Hi {name}, this is {recruiter} from {company}. Just wanted to touch base and see if you're still interested in the {role} position in {location}. Let me know if you'd like to reconnect!" },
+    { id:"1", label:"Initial Outreach", body:"Hi {firstname}, this is {recruiter} from {company}. I came across your profile and think you'd be a great fit for a {role} role we're hiring for in {location}. Do you have a few minutes to chat this week?" },
+    { id:"2", label:"Interview Follow-Up", body:"Hi {firstname}, this is {recruiter} from {company}. Just following up on our conversation about the {role} position. We'd love to move forward with scheduling your next interview. What does your availability look like this week?" },
+    { id:"3", label:"Offer Nudge", body:"Hey {firstname}! This is {recruiter} from {company}. Just checking in — have you had a chance to review the offer we sent over for the {role} position? Happy to answer any questions." },
+    { id:"4", label:"Quick Check-In", body:"Hi {firstname}, this is {recruiter} from {company}. Just wanted to touch base and see if you're still interested in the {role} position in {location}. Let me know if you'd like to reconnect!" },
   ];
 
   // ===== State =====
@@ -226,7 +226,6 @@
     if (!fullName) return "there";
     var parts = fullName.trim().split(/\s+/);
     if (parts.length <= 1) return parts[0] || "there";
-    // If first part is a prefix, use the second part
     var firstLower = parts[0].toLowerCase();
     for (var i = 0; i < PREFIXES.length; i++) {
       if (firstLower === PREFIXES[i]) {
@@ -234,6 +233,13 @@
       }
     }
     return parts[0];
+  }
+
+  function getLastName(fullName) {
+    if (!fullName) return "";
+    var parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return parts[0] || "";
+    return parts[parts.length - 1];
   }
 
   function parseLine(line) {
@@ -295,7 +301,9 @@
   function fillTemplate(body, candidate) {
     if (!candidate) return body;
     return body
+      .replace(/\{firstname\}/gi, getFirstName(candidate.name))
       .replace(/\{name\}/gi, getFirstName(candidate.name))
+      .replace(/\{lastname\}/gi, getLastName(candidate.name))
       .replace(/\{fullname\}/gi, candidate.name || "")
       .replace(/\{role\}/gi, candidate.role || "[Role]")
       .replace(/\{email\}/gi, candidate.email || "")
@@ -466,7 +474,7 @@
             + '<span style="color:var(--purple-light)">Optional:</span> name, recruiter, company, role, location, email'
           + '</div>'
           + '<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.6">'
-            + '<strong style="color:var(--text-muted)">Token tip:</strong> Use <span class="token-tag">{name}</span> for first name (skips prefixes like Dr., Mr., etc.) and <span class="token-tag">{fullname}</span> for the full name as-is.'
+            + '<strong style="color:var(--text-muted)">Token tip:</strong> Use <span class="token-tag">{firstname}</span> for first name (skips Dr., Mr., etc.), <span class="token-tag">{lastname}</span> for last name, or <span class="token-tag">{fullname}</span> for the full name as-is.'
           + '</div>'
         + '</div>'
       + '</div>';
@@ -583,7 +591,8 @@
         + '</div>'
         + '<div style="margin-top:12px;font-size:11px;color:var(--text-dim);line-height:1.8">'
           + 'Available tokens:<br>'
-          + '<span class="token-tag">{name}</span> first name (skips Dr., Mr., etc.)<br>'
+          + '<span class="token-tag">{firstname}</span> first name (skips Dr., Mr., etc.)<br>'
+          + '<span class="token-tag">{lastname}</span> last name<br>'
           + '<span class="token-tag">{fullname}</span> full name as-is<br>'
           + '<span class="token-tag">{recruiter}</span> '
           + '<span class="token-tag">{company}</span> '
