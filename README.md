@@ -17,10 +17,15 @@ Loading Contacts into QuickText
 Although you may enter phone numbers manually, what sets QuickText apart from similar apps is its ability to load CSV files. These are the headers you must have in your CSV file, and they must be in this order:
 
 name - This is the name of the person you're texting. First and Last Name like "Bob Johnson"
+
 phone number - Their phone number. Format doesn't matter	
+
 recruiter - This is you. If you are not recruiting, this is still you	
+
 company - The company you work for
+
 role - If you're recruiting, this is the job you're hiring for. If you're doing something else, you can put whatever you want here	
+
 location - Location the job exists in
 
 These will show up as tokens in the text templates. You don't have to use all the tokens. Only the first three are really necessary. 
